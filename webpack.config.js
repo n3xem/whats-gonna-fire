@@ -8,6 +8,8 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].js',
+        libraryTarget: 'umd',
+        globalObject: 'this'
     },
     module: {
         rules: [
@@ -20,6 +22,9 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
+    },
+    experiments: {
+        topLevelAwait: true
     },
     devtool: 'inline-source-map'
 }; 

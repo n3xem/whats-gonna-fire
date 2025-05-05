@@ -1,170 +1,51 @@
-// Chrome拡張のインターフェース
-interface WorkflowData {
-    name: string;
-    path: string;
-    state: string;
-    created_at: string;
-    updated_at: string;
-    html_url: string;
-}
-
-interface WorkflowsResponse {
-    total_count: number;
-    workflows: WorkflowData[];
-}
-
-interface RepoInfo {
-    default_branch: string;
-}
-
-interface FilteredWorkflows {
-    total_count: number;
-    workflows: WorkflowData[];
-}
-
-interface WorkflowWithContent {
-    workflow: WorkflowData;
-    content: string;
-    index: number;
-    error?: boolean;
-}
+import { WorkflowWithContent, GitHubClient } from './github_client';
 
 // アクションボタンがクリックされたときの処理
-chrome.action.onClicked.addListener((tab: chrome.tabs.Tab) => {
+chrome.action.onClicked.addListener(async (tab: chrome.tabs.Tab) => {
     // GitHubのリポジトリページにいることを確認
     if (tab.url && tab.url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)/)) {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id as number },
-            func: getWorkflows,
-        });
+        try {
+            // バックグラウンドスクリプト自身でGitHubClientを使用
+            const workflowsWithContent = await GitHubClient.getAllWorkflowsWithContent(tab.url);
+
+            // タブにメッセージを送信して結果を表示
+            if (tab.id) {
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: (data) => {
+                        console.log("===== GitHub .github/workflows内のワークフロー一覧と内容 =====");
+
+                        if (!data || data.length === 0) {
+                            console.log("このリポジトリには.github/workflows内にワークフローが存在しないか、取得に失敗しました。");
+                            return;
+                        }
+
+                        data.forEach((item: any) => {
+                            const { workflow, content, index, error } = item;
+
+                            console.log(`\n--- ワークフロー ${index + 1} ---`);
+                            console.log(`名前: ${workflow.name}`);
+                            console.log(`パス: ${workflow.path}`);
+                            console.log(`状態: ${workflow.state}`);
+                            console.log(`作成日: ${new Date(workflow.created_at).toLocaleString()}`);
+                            console.log(`更新日: ${new Date(workflow.updated_at).toLocaleString()}`);
+                            console.log(`URL: ${workflow.html_url}`);
+
+                            console.log(`\nワークフローファイルの内容:`);
+                            if (error) {
+                                console.error(content);
+                            } else {
+                                console.log(`\`\`\`yaml\n${content}\n\`\`\``);
+                            }
+                        });
+                    },
+                    args: [workflowsWithContent]
+                });
+            }
+        } catch (error) {
+            console.error("ワークフロー取得エラー:", error);
+        }
     } else {
         console.log("このページはGitHubリポジトリページではありません。");
     }
-});
-
-// ワークフローを取得する関数
-function getWorkflows(): void {
-    // URLからリポジトリ情報を抽出
-    const urlMatch = window.location.href.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)/);
-    if (!urlMatch) {
-        console.log("GitHubリポジトリURLの解析に失敗しました。");
-        return;
-    }
-
-    const owner = urlMatch[1];
-    const repo = urlMatch[2];
-
-    console.log(`リポジトリ: ${owner}/${repo}`);
-
-    // 最初にリポジトリの情報を取得してデフォルトブランチを確認
-    fetch(`https://api.github.com/repos/${owner}/${repo}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`GitHub API エラー: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then((repoInfo: RepoInfo) => {
-            const defaultBranch = repoInfo.default_branch || 'main';
-            console.log(`デフォルトブランチ: ${defaultBranch}`);
-
-            // ワークフロー情報を取得
-            return fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`GitHub API エラー: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then((data: WorkflowsResponse) => {
-                    // ブランチ情報を含めて返す
-                    return {
-                        workflows: data,
-                        defaultBranch: defaultBranch
-                    };
-                });
-        })
-        .then(data => {
-            // .github/workflows 内のワークフローだけをフィルタリング
-            const filteredWorkflows: FilteredWorkflows = {
-                total_count: 0,
-                workflows: []
-            };
-
-            if (data.workflows.workflows && data.workflows.workflows.length > 0) {
-                filteredWorkflows.workflows = data.workflows.workflows.filter(workflow =>
-                    workflow.path.startsWith('.github/workflows/')
-                );
-                filteredWorkflows.total_count = filteredWorkflows.workflows.length;
-            }
-
-            console.log(".github/workflows内のワークフロー一覧:");
-            console.log(filteredWorkflows);
-
-            // ワークフロー情報を直接表示
-            console.log("===== GitHub .github/workflows内のワークフロー一覧と内容 =====");
-
-            if (filteredWorkflows.total_count === 0) {
-                console.log("このリポジトリには.github/workflows内にワークフローが存在しません。");
-                return;
-            }
-
-            console.log(`合計: ${filteredWorkflows.total_count}件のワークフロー`);
-
-            // 各ワークフローファイルの内容を取得して表示する
-            return Promise.all(filteredWorkflows.workflows.map((workflow, index) => {
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/refs/heads/${data.defaultBranch}/${workflow.path}`;
-
-                return fetch(rawUrl)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`ファイル取得エラー: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(content => {
-                        // ワークフロー情報と内容をセットで返す
-                        return {
-                            workflow: workflow,
-                            content: content,
-                            index: index
-                        };
-                    })
-                    .catch(error => {
-                        // ファイル取得のエラーハンドリング
-                        return {
-                            workflow: workflow,
-                            content: `ファイル内容の取得に失敗しました: ${error.message}`,
-                            index: index,
-                            error: true
-                        };
-                    });
-            }));
-        })
-        .then((workflowsWithContent?: WorkflowWithContent[]) => {
-            // ワークフロー情報と内容を表示
-            if (workflowsWithContent) {
-                workflowsWithContent.forEach(item => {
-                    const { workflow, content, index, error } = item;
-
-                    console.log(`\n--- ワークフロー ${index + 1} ---`);
-                    console.log(`名前: ${workflow.name}`);
-                    console.log(`パス: ${workflow.path}`);
-                    console.log(`状態: ${workflow.state}`);
-                    console.log(`作成日: ${new Date(workflow.created_at).toLocaleString()}`);
-                    console.log(`更新日: ${new Date(workflow.updated_at).toLocaleString()}`);
-                    console.log(`URL: ${workflow.html_url}`);
-
-                    console.log(`\nワークフローファイルの内容:`);
-                    if (error) {
-                        console.error(content);
-                    } else {
-                        console.log(`\`\`\`yaml\n${content}\n\`\`\``);
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.error("ワークフロー取得エラー:", error);
-        });
-} 
+}); 
