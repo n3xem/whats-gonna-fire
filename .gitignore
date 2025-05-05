@@ -1,0 +1,15 @@
+# Node.js関連
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+package-lock.json
+
+# ビルド出力
+/dist/
+/build/
+
+.DS_Store
+
+# TypeScript関連
+*.tsbuildinfo 

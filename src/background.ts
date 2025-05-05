@@ -1,10 +1,41 @@
+// Chrome拡張のインターフェース
+interface WorkflowData {
+    name: string;
+    path: string;
+    state: string;
+    created_at: string;
+    updated_at: string;
+    html_url: string;
+}
+
+interface WorkflowsResponse {
+    total_count: number;
+    workflows: WorkflowData[];
+}
+
+interface RepoInfo {
+    default_branch: string;
+}
+
+interface FilteredWorkflows {
+    total_count: number;
+    workflows: WorkflowData[];
+}
+
+interface WorkflowWithContent {
+    workflow: WorkflowData;
+    content: string;
+    index: number;
+    error?: boolean;
+}
+
 // アクションボタンがクリックされたときの処理
-chrome.action.onClicked.addListener((tab) => {
+chrome.action.onClicked.addListener((tab: chrome.tabs.Tab) => {
     // GitHubのリポジトリページにいることを確認
-    if (tab.url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)/)) {
+    if (tab.url && tab.url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)/)) {
         chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: getWorkflows,
+            target: { tabId: tab.id as number },
+            func: getWorkflows,
         });
     } else {
         console.log("このページはGitHubリポジトリページではありません。");
@@ -12,7 +43,7 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 // ワークフローを取得する関数
-function getWorkflows() {
+function getWorkflows(): void {
     // URLからリポジトリ情報を抽出
     const urlMatch = window.location.href.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)/);
     if (!urlMatch) {
@@ -33,7 +64,7 @@ function getWorkflows() {
             }
             return response.json();
         })
-        .then(repoInfo => {
+        .then((repoInfo: RepoInfo) => {
             const defaultBranch = repoInfo.default_branch || 'main';
             console.log(`デフォルトブランチ: ${defaultBranch}`);
 
@@ -45,7 +76,7 @@ function getWorkflows() {
                     }
                     return response.json();
                 })
-                .then(data => {
+                .then((data: WorkflowsResponse) => {
                     // ブランチ情報を含めて返す
                     return {
                         workflows: data,
@@ -55,7 +86,7 @@ function getWorkflows() {
         })
         .then(data => {
             // .github/workflows 内のワークフローだけをフィルタリング
-            const filteredWorkflows = {
+            const filteredWorkflows: FilteredWorkflows = {
                 total_count: 0,
                 workflows: []
             };
@@ -70,7 +101,7 @@ function getWorkflows() {
             console.log(".github/workflows内のワークフロー一覧:");
             console.log(filteredWorkflows);
 
-            // コンテンツスクリプトにフィルタリングされたワークフロー情報を直接表示
+            // ワークフロー情報を直接表示
             console.log("===== GitHub .github/workflows内のワークフロー一覧と内容 =====");
 
             if (filteredWorkflows.total_count === 0) {
@@ -110,7 +141,7 @@ function getWorkflows() {
                     });
             }));
         })
-        .then(workflowsWithContent => {
+        .then((workflowsWithContent?: WorkflowWithContent[]) => {
             // ワークフロー情報と内容を表示
             if (workflowsWithContent) {
                 workflowsWithContent.forEach(item => {

@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "es2022",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "sourceMap": true,
+    "declaration": false,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "types": ["chrome"]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+} 

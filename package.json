@@ -1,0 +1,27 @@
+{
+  "name": "github-workflows-viewer",
+  "version": "1.0.0",
+  "description": "GitHubリポジトリの.github/workflows内のワークフロー一覧とその内容を表示するChrome拡張機能",
+  "main": "dist/background.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "watch": "webpack --config webpack.config.js --watch",
+    "dev": "webpack --config webpack.config.js --mode=development --watch",
+    "prod": "webpack --config webpack.config.js --mode=production"
+  },
+  "keywords": [
+    "chrome-extension",
+    "github",
+    "workflows"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "copy-webpack-plugin": "^11.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+} 
