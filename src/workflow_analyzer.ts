@@ -17,7 +17,8 @@ export class WorkflowAnalyzer {
             return {
                 isTriggeredOnDefaultBranch: false,
                 triggerEvents: [],
-                triggerBranches: []
+                triggerBranches: [],
+                triggerPaths: []
             };
         }
 
@@ -28,12 +29,14 @@ export class WorkflowAnalyzer {
                 return {
                     isTriggeredOnDefaultBranch: false,
                     triggerEvents: [],
-                    triggerBranches: []
+                    triggerBranches: [],
+                    triggerPaths: []
                 };
             }
 
             const triggerEvents: string[] = [];
             const triggerBranches: string[] = [];
+            const triggerPaths: string[] = [];
             let isTriggeredOnDefaultBranch = false;
 
             // トリガーイベントの解析
@@ -46,6 +49,7 @@ export class WorkflowAnalyzer {
                 if (onTrigger === 'push') {
                     isTriggeredOnDefaultBranch = true;
                     triggerBranches.push('*');
+                    triggerPaths.push('*'); // すべてのパスが対象
                 }
             }
             // 配列の場合（例: on: [push, pull_request]）
@@ -56,6 +60,7 @@ export class WorkflowAnalyzer {
                     if (event === 'push') {
                         isTriggeredOnDefaultBranch = true;
                         triggerBranches.push('*');
+                        triggerPaths.push('*'); // すべてのパスが対象
                     }
                 });
             }
@@ -73,6 +78,8 @@ export class WorkflowAnalyzer {
                         this.checkBranchesInConfig(eventConfig, defaultBranch, triggerBranches)
                     ) {
                         isTriggeredOnDefaultBranch = true;
+                        // パス情報も取得
+                        this.checkPathsInConfig(eventConfig, triggerPaths);
                     }
 
                     // pushイベントの処理
@@ -81,12 +88,15 @@ export class WorkflowAnalyzer {
                         if (!eventConfig) {
                             isTriggeredOnDefaultBranch = true;
                             triggerBranches.push('*');
+                            triggerPaths.push('*'); // すべてのパスが対象
                             continue;
                         }
 
                         // ブランチ指定がある場合
                         if (this.checkBranchesInConfig(eventConfig, defaultBranch, triggerBranches)) {
                             isTriggeredOnDefaultBranch = true;
+                            // パス情報も取得
+                            this.checkPathsInConfig(eventConfig, triggerPaths);
                         }
                     }
                 }
@@ -95,14 +105,16 @@ export class WorkflowAnalyzer {
             return {
                 isTriggeredOnDefaultBranch,
                 triggerEvents,
-                triggerBranches
+                triggerBranches,
+                triggerPaths
             };
         } catch (error) {
             console.error(`ワークフロー解析エラー (${workflow.workflow.name}):`, error);
             return {
                 isTriggeredOnDefaultBranch: false,
                 triggerEvents: [],
-                triggerBranches: []
+                triggerBranches: [],
+                triggerPaths: []
             };
         }
     }
@@ -148,6 +160,49 @@ export class WorkflowAnalyzer {
         }
 
         return false;
+    }
+
+    /**
+     * イベント設定内のパス指定を確認して取得
+     * @param eventConfig イベント設定オブジェクト
+     * @param triggerPaths 検出したパスパターンを格納する配列（副作用）
+     */
+    private static checkPathsInConfig(
+        eventConfig: any,
+        triggerPaths: string[]
+    ): void {
+        // 設定がない場合
+        if (!eventConfig) {
+            triggerPaths.push('*'); // デフォルトはすべてのパス
+            return;
+        }
+
+        // paths指定がある場合
+        if (eventConfig.paths) {
+            const paths = this.normalizePathsConfig(eventConfig.paths);
+            paths.forEach(path => triggerPaths.push(path));
+        } else if (!eventConfig.paths && !eventConfig['paths-ignore']) {
+            // paths指定もpaths-ignore指定もない場合はすべてのパスが対象
+            triggerPaths.push('*');
+        }
+
+        // paths-ignore指定がある場合
+        if (eventConfig['paths-ignore']) {
+            const ignorePaths = this.normalizePathsConfig(eventConfig['paths-ignore']);
+            ignorePaths.forEach(path => triggerPaths.push(`!${path}`)); // 除外パスには!をつける
+        }
+    }
+
+    /**
+     * パス設定を正規化（文字列または配列に変換）
+     */
+    private static normalizePathsConfig(paths: any): string[] {
+        if (typeof paths === 'string') {
+            return [paths];
+        } else if (Array.isArray(paths)) {
+            return paths;
+        }
+        return [];
     }
 
     /**

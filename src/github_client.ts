@@ -1,5 +1,4 @@
 // GitHub APIのインターフェース定義
-import * as yaml from 'js-yaml';
 import { WorkflowAnalyzer } from './workflow_analyzer';
 
 export interface WorkflowData {
@@ -40,6 +39,7 @@ export interface WorkflowTriggerAnalysis {
     isTriggeredOnDefaultBranch: boolean;
     triggerEvents: string[];
     triggerBranches: string[];
+    triggerPaths: string[];
 }
 
 export class GitHubClient {

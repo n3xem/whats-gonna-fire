@@ -189,6 +189,13 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
             triggerInfo.appendChild(branchesText);
         }
 
+        // パス一覧
+        if (triggerAnalysis.triggerPaths && triggerAnalysis.triggerPaths.length > 0) {
+            const pathsText = document.createElement('div');
+            pathsText.textContent = `パス: ${triggerAnalysis.triggerPaths.join(', ')}`;
+            triggerInfo.appendChild(pathsText);
+        }
+
         list.appendChild(triggerInfo);
     });
 
