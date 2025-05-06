@@ -7,14 +7,13 @@
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --config webpack.config.js --watch",
     "dev": "webpack --config webpack.config.js --mode=development --watch",
-    "prod": "webpack --config webpack.config.js --mode=production"
   },
   "keywords": [
     "chrome-extension",
     "github",
     "workflows"
   ],
-  "author": "",
+  "author": "yukyan",
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.0.254",
