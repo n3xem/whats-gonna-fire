@@ -148,6 +148,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         listItem.style.display = 'flex';
         listItem.style.alignItems = 'center';
         listItem.style.gap = '8px';
+        listItem.style.flexWrap = 'wrap';
 
         // リンク作成
         const link = document.createElement('a');
@@ -187,9 +188,22 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         triggerBadge.style.fontWeight = 'bold';
         triggerBadge.style.flexShrink = '0';
 
+        // 展開/折りたたみボタン作成
+        const toggleButton = document.createElement('button');
+        toggleButton.textContent = '詳細を表示';
+        toggleButton.style.marginLeft = 'auto';
+        toggleButton.style.padding = '2px 8px';
+        toggleButton.style.fontSize = '12px';
+        toggleButton.style.backgroundColor = '#f6f8fa';
+        toggleButton.style.border = '1px solid #d0d7de';
+        toggleButton.style.borderRadius = '6px';
+        toggleButton.style.cursor = 'pointer';
+        toggleButton.style.color = '#24292f';
+
         listItem.appendChild(link);
         listItem.appendChild(stateBadge);
         listItem.appendChild(triggerBadge);
+        listItem.appendChild(toggleButton);
         list.appendChild(listItem);
 
         // トリガー詳細情報
@@ -199,6 +213,8 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         triggerInfo.style.marginTop = '4px';
         triggerInfo.style.marginBottom = '12px';
         triggerInfo.style.marginLeft = '16px';
+        triggerInfo.style.width = '100%';
+        triggerInfo.style.display = 'none'; // 初期状態では非表示
 
         if (triggerAnalysis.triggerBranches.length > 0) {
             const branchesText = document.createElement('div');
@@ -282,7 +298,18 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
             triggerInfo.appendChild(analysisContainer);
         }
 
-        list.appendChild(triggerInfo);
+        listItem.appendChild(triggerInfo);
+
+        // 展開/折りたたみボタンのクリックイベント
+        toggleButton.addEventListener('click', () => {
+            if (triggerInfo.style.display === 'none') {
+                triggerInfo.style.display = 'block';
+                toggleButton.textContent = '詳細を隠す';
+            } else {
+                triggerInfo.style.display = 'none';
+                toggleButton.textContent = '詳細を表示';
+            }
+        });
     });
 
     container.appendChild(list);
