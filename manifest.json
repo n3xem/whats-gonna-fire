@@ -11,6 +11,12 @@
   "background": {
     "service_worker": "dist/background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*/*/pull/*"],
+      "js": ["dist/content_script.js"]
+    }
+  ],
   "action": {
     "default_title": "GitHub Workflows Viewer"
   }
