@@ -73,11 +73,6 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[]) 
                 item.triggerAnalysis && item.triggerAnalysis.isTriggeredOnDefaultBranch
             );
 
-            // 実行されるワークフローがない場合は表示しない
-            if (triggeredWorkflows.length === 0) {
-                return;
-            }
-
             // 既存要素の削除
             const existingContainer = document.querySelector('.workflow-files-container');
             if (existingContainer) {
@@ -102,6 +97,38 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[]) 
 
             // 説明追加
             const description = document.createElement('p');
+
+            // 実行されるワークフローがない場合はその旨を表示
+            if (triggeredWorkflows.length === 0) {
+                description.textContent = 'このPRをマージしても実行されるワークフローはありません';
+                description.style.fontSize = '14px';
+                description.style.color = '#57606a';
+                description.style.margin = '8px 0';
+                container.appendChild(description);
+
+                // ページに挿入
+                const mergeboxElement = document.querySelector('[data-testid="mergebox-partial"]');
+                if (mergeboxElement) {
+                    // mergeboxの中の一番下に挿入
+                    mergeboxElement.appendChild(container);
+                } else {
+                    // 代替位置を探す
+                    const targetElement = document.querySelector('.TimelineItem-body');
+                    if (targetElement) {
+                        // 最初のTimelineItem-bodyの上に挿入
+                        targetElement.parentNode?.insertBefore(container, targetElement);
+                    } else {
+                        // さらに代替位置を探す
+                        const prTitleElement = document.querySelector('.gh-header-title');
+                        if (prTitleElement) {
+                            prTitleElement.parentNode?.insertBefore(container, prTitleElement.nextSibling);
+                        }
+                    }
+                }
+
+                return;
+            }
+
             description.textContent = `このPRをマージすると ${triggeredWorkflows.length} 件のワークフローが実行される可能性があります`;
             description.style.fontSize = '14px';
             description.style.color = '#57606a';
