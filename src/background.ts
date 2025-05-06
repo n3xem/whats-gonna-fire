@@ -79,6 +79,16 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
                 return; // PRページでない場合は処理しない
             }
 
+            // マージ時に実行されるワークフローのみをフィルタリング
+            const triggeredWorkflows = data.filter(item =>
+                item.triggerAnalysis && item.triggerAnalysis.isTriggeredOnDefaultBranch
+            );
+
+            // 実行されるワークフローがない場合は表示しない
+            if (triggeredWorkflows.length === 0) {
+                return;
+            }
+
             // 既存要素の削除
             const existingContainer = document.querySelector('.workflow-files-container');
             if (existingContainer) {
@@ -96,9 +106,18 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
 
             // タイトル追加
             const title = document.createElement('h3');
-            title.textContent = 'ワークフローファイル一覧';
+            title.textContent = 'マージ時に実行されるワークフロー';
             title.style.marginTop = '0';
+            title.style.color = '#24292f';
             container.appendChild(title);
+
+            // 説明追加
+            const description = document.createElement('p');
+            description.textContent = `このPRをマージすると ${triggeredWorkflows.length} 件のワークフローが実行されます`;
+            description.style.fontSize = '14px';
+            description.style.color = '#57606a';
+            description.style.margin = '8px 0 16px';
+            container.appendChild(description);
 
             // リスト作成
             const list = document.createElement('ul');
@@ -106,7 +125,7 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
             list.style.listStyle = 'none';
 
             // 各ワークフローのリストアイテムを追加
-            data.forEach((item: any) => {
+            triggeredWorkflows.forEach((item: any) => {
                 const workflow = item.workflow;
                 const triggerAnalysis = item.triggerAnalysis;
 
@@ -146,52 +165,43 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
 
                 // トリガーバッジ作成
                 const triggerBadge = document.createElement('span');
-                if (triggerAnalysis && triggerAnalysis.isTriggeredOnDefaultBranch) {
-                    triggerBadge.textContent = 'マージ時実行';
-                    triggerBadge.style.backgroundColor = '#ff6b6b';
-                    triggerBadge.style.color = 'white';
-                } else {
-                    triggerBadge.textContent = 'マージ時実行なし';
-                    triggerBadge.style.backgroundColor = '#8d959f';
-                    triggerBadge.style.color = 'white';
-                }
+                triggerBadge.textContent = 'マージ時実行';
+                triggerBadge.style.backgroundColor = '#ff6b6b';
+                triggerBadge.style.color = 'white';
                 triggerBadge.style.padding = '2px 6px';
                 triggerBadge.style.borderRadius = '12px';
                 triggerBadge.style.fontSize = '12px';
                 triggerBadge.style.fontWeight = 'bold';
                 triggerBadge.style.flexShrink = '0';
 
+                listItem.appendChild(link);
+                listItem.appendChild(stateBadge);
+                listItem.appendChild(triggerBadge);
+                list.appendChild(listItem);
+
                 // トリガー詳細情報
-                if (triggerAnalysis) {
-                    const triggerInfo = document.createElement('div');
-                    triggerInfo.style.fontSize = '12px';
-                    triggerInfo.style.color = '#57606a';
-                    triggerInfo.style.marginTop = '4px';
+                const triggerInfo = document.createElement('div');
+                triggerInfo.style.fontSize = '12px';
+                triggerInfo.style.color = '#57606a';
+                triggerInfo.style.marginTop = '4px';
+                triggerInfo.style.marginBottom = '12px';
+                triggerInfo.style.marginLeft = '16px';
 
-                    // イベント一覧
-                    if (triggerAnalysis.triggerEvents.length > 0) {
-                        const eventsText = document.createElement('div');
-                        eventsText.textContent = `イベント: ${triggerAnalysis.triggerEvents.join(', ')}`;
-                        triggerInfo.appendChild(eventsText);
-                    }
-
-                    // ブランチ一覧
-                    if (triggerAnalysis.triggerBranches.length > 0) {
-                        const branchesText = document.createElement('div');
-                        branchesText.textContent = `ブランチ: ${triggerAnalysis.triggerBranches.join(', ')}`;
-                        triggerInfo.appendChild(branchesText);
-                    }
-
-                    listItem.appendChild(link);
-                    listItem.appendChild(stateBadge);
-                    listItem.appendChild(triggerBadge);
-                    list.appendChild(listItem);
-                    list.appendChild(triggerInfo);
-                } else {
-                    listItem.appendChild(link);
-                    listItem.appendChild(stateBadge);
-                    list.appendChild(listItem);
+                // イベント一覧
+                if (triggerAnalysis.triggerEvents.length > 0) {
+                    const eventsText = document.createElement('div');
+                    eventsText.textContent = `イベント: ${triggerAnalysis.triggerEvents.join(', ')}`;
+                    triggerInfo.appendChild(eventsText);
                 }
+
+                // ブランチ一覧
+                if (triggerAnalysis.triggerBranches.length > 0) {
+                    const branchesText = document.createElement('div');
+                    branchesText.textContent = `ブランチ: ${triggerAnalysis.triggerBranches.join(', ')}`;
+                    triggerInfo.appendChild(branchesText);
+                }
+
+                list.appendChild(triggerInfo);
             });
 
             container.appendChild(list);
