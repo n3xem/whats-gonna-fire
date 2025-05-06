@@ -120,10 +120,29 @@ export class WorkflowAnalyzer {
         result: WorkflowTriggerAnalysis,
         defaultBranch: string
     ): void {
+        // typesにclosedが含まれているかチェック
+        const isTriggeredOnClosed = this.checkPullRequestClosedType(eventConfig);
+
+        // ブランチチェック
         if (this.checkBranchesInConfig(eventConfig, defaultBranch, result.triggerBranches)) {
-            result.isTriggeredOnDefaultBranch = true;
+            // マージ時に実行される条件：デフォルトブランチへのPRかつtypesにclosedが含まれている
+            result.isTriggeredOnDefaultBranch = isTriggeredOnClosed;
             this.checkPathsInConfig(eventConfig, result.triggerPaths);
         }
+    }
+
+    /**
+     * pull_requestイベントのtypesにclosedが含まれているかチェック
+     */
+    private static checkPullRequestClosedType(eventConfig: any): boolean {
+        if (!eventConfig || !eventConfig.types) {
+            // types指定がない場合はデフォルトで opened, synchronize, reopened のみ
+            return false;
+        }
+
+        // types配列にclosedが含まれているかチェック
+        const types = Array.isArray(eventConfig.types) ? eventConfig.types : [eventConfig.types];
+        return types.includes('closed');
     }
 
     /**
