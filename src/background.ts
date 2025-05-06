@@ -1,6 +1,12 @@
 import { WorkflowWithContent, GitHubClient } from './github_client';
 import { isGitHubRepoOrPRPage } from './common';
 
+// キャッシュの有効期限（ミリ秒）- 1時間
+const CACHE_EXPIRATION = 60 * 60 * 1000;
+
+// 注意: manifest.jsonに "storage" パーミッションを追加してください
+// "permissions": ["scripting", "activeTab", "storage"],
+
 // アクションボタンがクリックされたときの処理
 chrome.action.onClicked.addListener(handleActionClick);
 
@@ -12,7 +18,8 @@ async function handleActionClick(tab: chrome.tabs.Tab) {
     }
 
     try {
-        const workflowsWithContent = await GitHubClient.getAllWorkflowsWithContent(tab.url);
+        // まずストレージからデータを取得
+        const workflowsWithContent = await getWorkflowsData(tab.url);
         // DOM上に表示
         executeScriptForDOMDisplay(tab.id, workflowsWithContent);
     } catch (error) {
@@ -20,8 +27,64 @@ async function handleActionClick(tab: chrome.tabs.Tab) {
     }
 }
 
+// ワークフローデータを取得する関数（ストレージ→GitHubの順）
+async function getWorkflowsData(repoUrl: string): Promise<WorkflowWithContent[]> {
+    // ストレージからデータを取得
+    const cachedData = await getCachedWorkflows(repoUrl);
+
+    // キャッシュが有効な場合はそれを返す
+    if (cachedData) {
+        console.log("キャッシュからワークフローデータを取得しました");
+        return cachedData.data;
+    }
+
+    // キャッシュがない場合はGitHubから取得
+    console.log("GitHubからワークフローデータを取得します");
+    const workflowsWithContent = await GitHubClient.getAllWorkflowsWithContent(repoUrl);
+
+    // 取得したデータをストレージに保存（nullでない場合）
+    if (workflowsWithContent) {
+        await cacheWorkflows(repoUrl, workflowsWithContent);
+    }
+
+    // nullの場合は空配列を返す
+    return workflowsWithContent || [];
+}
+
+// ストレージからワークフローデータを取得
+async function getCachedWorkflows(repoUrl: string): Promise<{ data: WorkflowWithContent[], timestamp: number } | null> {
+    return new Promise((resolve) => {
+        chrome.storage.local.get([repoUrl], (result) => {
+            const cachedData = result[repoUrl];
+
+            // キャッシュがない、または期限切れの場合はnullを返す
+            if (!cachedData || Date.now() - cachedData.timestamp > CACHE_EXPIRATION) {
+                resolve(null);
+                return;
+            }
+
+            resolve(cachedData);
+        });
+    });
+}
+
+// ワークフローデータをストレージに保存
+async function cacheWorkflows(repoUrl: string, data: WorkflowWithContent[]): Promise<void> {
+    return new Promise((resolve) => {
+        const cacheData = {
+            data: data,
+            timestamp: Date.now()
+        };
+
+        chrome.storage.local.set({ [repoUrl]: cacheData }, () => {
+            console.log("ワークフローデータをキャッシュしました");
+            resolve();
+        });
+    });
+}
+
 // DOM表示用のスクリプト実行
-function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] | null) {
+function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[]) {
     chrome.scripting.executeScript({
         target: { tabId },
         func: (data) => {

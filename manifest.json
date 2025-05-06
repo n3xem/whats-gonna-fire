@@ -3,7 +3,7 @@
   "name": "GitHub Workflows Viewer",
   "version": "1.0",
   "description": "GitHubリポジトリのワークフロー一覧を表示する拡張機能",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://github.com/*",
     "https://api.github.com/*"
