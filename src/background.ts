@@ -108,10 +108,14 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
             // 各ワークフローのリストアイテムを追加
             data.forEach((item: any) => {
                 const workflow = item.workflow;
+                const triggerAnalysis = item.triggerAnalysis;
 
                 // リストアイテム作成
                 const listItem = document.createElement('li');
                 listItem.style.margin = '8px 0';
+                listItem.style.display = 'flex';
+                listItem.style.alignItems = 'center';
+                listItem.style.gap = '8px';
 
                 // リンク作成
                 const link = document.createElement('a');
@@ -121,27 +125,73 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
                 link.style.color = '#0969da';
                 link.style.textDecoration = 'none';
                 link.style.fontWeight = 'bold';
+                link.style.flexShrink = '0';
 
-                // バッジ作成
-                const badge = document.createElement('span');
-                badge.textContent = workflow.state;
-                badge.style.marginLeft = '8px';
-                badge.style.padding = '2px 6px';
-                badge.style.borderRadius = '12px';
-                badge.style.fontSize = '12px';
-                badge.style.fontWeight = 'bold';
+                // 状態バッジ作成
+                const stateBadge = document.createElement('span');
+                stateBadge.textContent = workflow.state;
+                stateBadge.style.padding = '2px 6px';
+                stateBadge.style.borderRadius = '12px';
+                stateBadge.style.fontSize = '12px';
+                stateBadge.style.fontWeight = 'bold';
+                stateBadge.style.flexShrink = '0';
 
                 if (workflow.state === 'active') {
-                    badge.style.backgroundColor = '#2da44e';
-                    badge.style.color = 'white';
+                    stateBadge.style.backgroundColor = '#2da44e';
+                    stateBadge.style.color = 'white';
                 } else {
-                    badge.style.backgroundColor = '#ccc';
-                    badge.style.color = '#555';
+                    stateBadge.style.backgroundColor = '#ccc';
+                    stateBadge.style.color = '#555';
                 }
 
-                listItem.appendChild(link);
-                listItem.appendChild(badge);
-                list.appendChild(listItem);
+                // トリガーバッジ作成
+                const triggerBadge = document.createElement('span');
+                if (triggerAnalysis && triggerAnalysis.isTriggeredOnDefaultBranch) {
+                    triggerBadge.textContent = 'マージ時実行';
+                    triggerBadge.style.backgroundColor = '#ff6b6b';
+                    triggerBadge.style.color = 'white';
+                } else {
+                    triggerBadge.textContent = 'マージ時実行なし';
+                    triggerBadge.style.backgroundColor = '#8d959f';
+                    triggerBadge.style.color = 'white';
+                }
+                triggerBadge.style.padding = '2px 6px';
+                triggerBadge.style.borderRadius = '12px';
+                triggerBadge.style.fontSize = '12px';
+                triggerBadge.style.fontWeight = 'bold';
+                triggerBadge.style.flexShrink = '0';
+
+                // トリガー詳細情報
+                if (triggerAnalysis) {
+                    const triggerInfo = document.createElement('div');
+                    triggerInfo.style.fontSize = '12px';
+                    triggerInfo.style.color = '#57606a';
+                    triggerInfo.style.marginTop = '4px';
+
+                    // イベント一覧
+                    if (triggerAnalysis.triggerEvents.length > 0) {
+                        const eventsText = document.createElement('div');
+                        eventsText.textContent = `イベント: ${triggerAnalysis.triggerEvents.join(', ')}`;
+                        triggerInfo.appendChild(eventsText);
+                    }
+
+                    // ブランチ一覧
+                    if (triggerAnalysis.triggerBranches.length > 0) {
+                        const branchesText = document.createElement('div');
+                        branchesText.textContent = `ブランチ: ${triggerAnalysis.triggerBranches.join(', ')}`;
+                        triggerInfo.appendChild(branchesText);
+                    }
+
+                    listItem.appendChild(link);
+                    listItem.appendChild(stateBadge);
+                    listItem.appendChild(triggerBadge);
+                    list.appendChild(listItem);
+                    list.appendChild(triggerInfo);
+                } else {
+                    listItem.appendChild(link);
+                    listItem.appendChild(stateBadge);
+                    list.appendChild(listItem);
+                }
             });
 
             container.appendChild(list);
