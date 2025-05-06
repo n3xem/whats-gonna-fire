@@ -1,4 +1,5 @@
 import { WorkflowWithContent, GitHubClient } from './github_client';
+import { isGitHubRepoOrPRPage } from './common';
 
 // アクションボタンがクリックされたときの処理
 chrome.action.onClicked.addListener(handleActionClick);
@@ -12,55 +13,11 @@ async function handleActionClick(tab: chrome.tabs.Tab) {
 
     try {
         const workflowsWithContent = await GitHubClient.getAllWorkflowsWithContent(tab.url);
-
-        // コンソールに出力
-        executeScriptForConsoleLog(tab.id, workflowsWithContent);
-
         // DOM上に表示
         executeScriptForDOMDisplay(tab.id, workflowsWithContent);
     } catch (error) {
         console.error("ワークフロー取得エラー:", error);
     }
-}
-
-// URL判定関数
-function isGitHubRepoOrPRPage(url: string): boolean {
-    return !!url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)(?:\/pull\/(\d+))?/);
-}
-
-// コンソールログ用のスクリプト実行
-function executeScriptForConsoleLog(tabId: number, data: WorkflowWithContent[] | null) {
-    chrome.scripting.executeScript({
-        target: { tabId },
-        func: (data) => {
-            console.log("===== GitHub .github/workflows内のワークフロー一覧と内容 =====");
-
-            if (!data || data.length === 0) {
-                console.log("このリポジトリには.github/workflows内にワークフローが存在しないか、取得に失敗しました。");
-                return;
-            }
-
-            data.forEach((item: any, index: number) => {
-                const { workflow, content, error } = item;
-
-                console.log(`\n--- ワークフロー ${index + 1} ---`);
-                console.log(`名前: ${workflow.name}`);
-                console.log(`パス: ${workflow.path}`);
-                console.log(`状態: ${workflow.state}`);
-                console.log(`作成日: ${new Date(workflow.created_at).toLocaleString()}`);
-                console.log(`更新日: ${new Date(workflow.updated_at).toLocaleString()}`);
-                console.log(`URL: ${workflow.html_url}`);
-
-                console.log(`\nワークフローファイルの内容:`);
-                if (error) {
-                    console.error(content);
-                } else {
-                    console.log(`\`\`\`yaml\n${content}\n\`\`\``);
-                }
-            });
-        },
-        args: [data]
-    });
 }
 
 // DOM表示用のスクリプト実行
