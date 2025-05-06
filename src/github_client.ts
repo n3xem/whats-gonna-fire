@@ -1,5 +1,6 @@
 // GitHub APIのインターフェース定義
 import { WorkflowAnalyzer } from './workflow_analyzer';
+import { parseRepoUrl } from './common';
 
 export interface WorkflowData {
     name: string;
@@ -43,22 +44,6 @@ export interface WorkflowTriggerAnalysis {
 }
 
 export class GitHubClient {
-    /**
-     * リポジトリURLからownerとrepo名を抽出
-     */
-    static parseRepoUrl(url: string): { owner: string; repo: string } | null {
-        const urlMatch = url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)/);
-        if (!urlMatch) {
-            console.log("GitHubリポジトリURLの解析に失敗しました。");
-            return null;
-        }
-
-        return {
-            owner: urlMatch[1],
-            repo: urlMatch[2]
-        };
-    }
-
     /**
      * リポジトリの情報を取得
      */
@@ -139,7 +124,7 @@ export class GitHubClient {
      * リポジトリ内のすべてのワークフローとその内容を取得
      */
     static async getAllWorkflowsWithContent(url: string): Promise<WorkflowWithContent[] | null> {
-        const repoInfo = this.parseRepoUrl(url);
+        const repoInfo = parseRepoUrl(url);
         if (!repoInfo) {
             return null;
         }
