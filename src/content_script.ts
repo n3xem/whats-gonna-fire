@@ -227,12 +227,10 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
         // パス条件
         if (triggerAnalysis.triggerPaths && triggerAnalysis.triggerPaths.length > 0) {
-            const pathItem = document.createElement('li');
+            // パスが「*」のみの場合は条件として表示しない
+            if (!(triggerAnalysis.triggerPaths.length === 1 && triggerAnalysis.triggerPaths[0] === '*')) {
+                const pathItem = document.createElement('li');
 
-            // パスが「*」のみの場合は全てのファイルが対象
-            if (triggerAnalysis.triggerPaths.length === 1 && triggerAnalysis.triggerPaths[0] === '*') {
-                pathItem.textContent = '📁 すべてのファイルの変更';
-            } else {
                 // 通常のパスと除外パス（!で始まるもの）を分ける
                 const includePaths = triggerAnalysis.triggerPaths.filter((path: string) => !path.startsWith('!'));
                 const excludePaths = triggerAnalysis.triggerPaths
@@ -254,9 +252,8 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
                 }
 
                 pathItem.textContent = pathDescription;
+                conditionsList.appendChild(pathItem);
             }
-
-            conditionsList.appendChild(pathItem);
         }
 
         // OpenAIによる分析結果を表示（存在する場合）
