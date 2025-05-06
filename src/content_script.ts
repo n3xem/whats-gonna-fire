@@ -30,6 +30,7 @@ window.onload = async () => {
     }
 };
 
+/*
 // GitHubのDOM変更を監視（PR詳細ページ内の動的な変更に対応）
 const observer = new MutationObserver((mutations) => {
     // マージボックスが読み込まれた場合など、DOMが大きく変わった場合に再実行
@@ -55,6 +56,8 @@ observer.observe(document.body, {
     childList: true,
     subtree: true
 });
+
+*/
 
 // ワークフロー情報をDOM上に表示する関数
 function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
@@ -255,10 +258,52 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
             triggerInfo.appendChild(pathsText);
         }
 
+        // OpenAIによる分析結果を表示（存在する場合）
+        if (item.analysis) {
+            const analysisContainer = document.createElement('div');
+            analysisContainer.style.marginTop = '8px';
+            analysisContainer.style.padding = '8px';
+            analysisContainer.style.backgroundColor = '#f0f6ff';
+            analysisContainer.style.borderRadius = '4px';
+            analysisContainer.style.borderLeft = '3px solid #0969da';
+
+            const analysisTitle = document.createElement('div');
+            analysisTitle.textContent = 'ワークフロー分析:';
+            analysisTitle.style.fontWeight = 'bold';
+            analysisTitle.style.marginBottom = '4px';
+            analysisTitle.style.color = '#24292f';
+
+            const analysisText = document.createElement('div');
+            analysisText.innerHTML = item.analysis || '';
+            analysisText.style.color = '#24292f';
+
+            analysisContainer.appendChild(analysisTitle);
+            analysisContainer.appendChild(analysisText);
+            triggerInfo.appendChild(analysisContainer);
+        }
+
         list.appendChild(triggerInfo);
     });
 
     container.appendChild(list);
+
+    // APIキーが設定されていない場合の通知
+    const apiKeyNotice = document.createElement('div');
+    apiKeyNotice.style.marginTop = '16px';
+    apiKeyNotice.style.fontSize = '12px';
+    apiKeyNotice.style.color = '#57606a';
+    apiKeyNotice.style.padding = '8px';
+    apiKeyNotice.style.backgroundColor = '#ffebe9';
+    apiKeyNotice.style.borderRadius = '4px';
+    apiKeyNotice.style.display = 'none';
+
+    // 分析結果がない場合はAPIキー設定を促す
+    if (!data.some(item => item.analysis)) {
+        apiKeyNotice.textContent = 'ワークフロー分析を表示するには、拡張機能のアイコンをクリックしてOpenAI APIキーを設定してください。';
+        apiKeyNotice.style.display = 'block';
+    }
+
+    container.appendChild(apiKeyNotice);
 
     // ページに挿入
     insertContainerIntoDOM(container);

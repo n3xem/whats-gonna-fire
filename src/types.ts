@@ -29,6 +29,7 @@ export interface WorkflowWithContent {
     index: number;
     error?: boolean;
     triggerAnalysis?: WorkflowTriggerAnalysis;
+    analysis?: string; // OpenAIによる分析結果
 }
 
 /**
