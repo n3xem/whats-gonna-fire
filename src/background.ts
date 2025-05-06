@@ -1,5 +1,6 @@
 import { WorkflowWithContent, GitHubClient } from './github_client';
 import { isGitHubRepoOrPRPage } from './common';
+import { getCachedWorkflows, cacheWorkflows } from './cache';
 
 // キャッシュの有効期限（ミリ秒）- 1時間
 const CACHE_EXPIRATION = 60 * 60 * 1000;
@@ -49,38 +50,6 @@ async function getWorkflowsData(repoUrl: string): Promise<WorkflowWithContent[]>
 
     // nullの場合は空配列を返す
     return workflowsWithContent || [];
-}
-
-// ストレージからワークフローデータを取得
-async function getCachedWorkflows(repoUrl: string): Promise<{ data: WorkflowWithContent[], timestamp: number } | null> {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([repoUrl], (result) => {
-            const cachedData = result[repoUrl];
-
-            // キャッシュがない、または期限切れの場合はnullを返す
-            if (!cachedData || Date.now() - cachedData.timestamp > CACHE_EXPIRATION) {
-                resolve(null);
-                return;
-            }
-
-            resolve(cachedData);
-        });
-    });
-}
-
-// ワークフローデータをストレージに保存
-async function cacheWorkflows(repoUrl: string, data: WorkflowWithContent[]): Promise<void> {
-    return new Promise((resolve) => {
-        const cacheData = {
-            data: data,
-            timestamp: Date.now()
-        };
-
-        chrome.storage.local.set({ [repoUrl]: cacheData }, () => {
-            console.log("ワークフローデータをキャッシュしました");
-            resolve();
-        });
-    });
 }
 
 // DOM表示用のスクリプト実行
