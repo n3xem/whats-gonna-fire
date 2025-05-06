@@ -30,35 +30,6 @@ window.onload = async () => {
     }
 };
 
-/*
-// GitHubのDOM変更を監視（PR詳細ページ内の動的な変更に対応）
-const observer = new MutationObserver((mutations) => {
-    // マージボックスが読み込まれた場合など、DOMが大きく変わった場合に再実行
-    const mergeboxElement = document.querySelector('[data-testid="mergebox-partial"]');
-    if (mergeboxElement) {
-        // 既存の表示があれば更新しない（重複防止）
-        if (!document.querySelector('.workflow-files-container')) {
-            console.log('マージボックスが読み込まれたのでワークフロー情報を取得します');
-            chrome.runtime.sendMessage(
-                { action: 'getWorkflowsData', url: window.location.href },
-                (response) => {
-                    if (response && response.data) {
-                        displayWorkflowsOnDOM(response.data);
-                    }
-                }
-            );
-        }
-    }
-});
-
-// DOM監視の開始
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
-
-*/
-
 // ワークフロー情報をDOM上に表示する関数
 function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
     // データチェック
@@ -105,7 +76,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
     // タイトル追加
     const title = document.createElement('h3');
-    title.textContent = 'マージ時に実行されるワークフロー';
+    title.textContent = '🚀 マージ時に実行されるワークフロー';
     title.style.marginTop = '0';
     title.style.color = '#24292f';
     container.appendChild(title);
@@ -115,7 +86,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
     // 実行されるワークフローがない場合はその旨を表示
     if (data.length === 0) {
-        description.textContent = 'このPRをマージしても実行されるワークフローはありません';
+        description.textContent = '✅ このPRをマージしても実行されるワークフローはありません';
         description.style.fontSize = '14px';
         description.style.color = '#57606a';
         description.style.margin = '8px 0';
@@ -126,7 +97,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         return;
     }
 
-    description.textContent = `このPRをマージすると ${data.length} 件のワークフローが実行される可能性があります`;
+    description.textContent = `⚠️ このPRをマージすると ${data.length} 件のワークフローが実行される可能性があります`;
     description.style.fontSize = '14px';
     description.style.color = '#57606a';
     description.style.margin = '8px 0 16px';
@@ -162,7 +133,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
         // 状態バッジ作成
         const stateBadge = document.createElement('span');
-        stateBadge.textContent = workflow.state;
+        stateBadge.textContent = workflow.state === 'active' ? 'active' : '⚪ ' + workflow.state;
         stateBadge.style.padding = '2px 6px';
         stateBadge.style.borderRadius = '12px';
         stateBadge.style.fontSize = '12px';
@@ -190,7 +161,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
         // 展開/折りたたみボタン作成
         const toggleButton = document.createElement('button');
-        toggleButton.textContent = '詳細を表示';
+        toggleButton.textContent = '👁️ 詳細を表示';
         toggleButton.style.marginLeft = 'auto';
         toggleButton.style.padding = '2px 8px';
         toggleButton.style.fontSize = '12px';
@@ -224,16 +195,16 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
             // ブランチが「*」のみの場合は全てのブランチが対象
             if (triggerAnalysis.triggerBranches.length === 1 && triggerAnalysis.triggerBranches[0] === '*') {
-                branchesText.textContent = `すべてのブランチ${eventVerbs}トリガーされます`;
+                branchesText.textContent = `🌿 すべてのブランチ${eventVerbs}トリガーされます`;
             } else {
                 // ワイルドカードを含むブランチ名を特別扱い
                 const hasWildcard = triggerAnalysis.triggerBranches.some((branch: string) =>
                     branch.includes('*') || branch.includes('**'));
 
                 if (hasWildcard) {
-                    branchesText.textContent = `「${triggerAnalysis.triggerBranches.join('」、「')}」のパターンに一致するブランチ${eventVerbs}トリガーされます`;
+                    branchesText.textContent = `🌿 「${triggerAnalysis.triggerBranches.join('」、「')}」のパターンに一致するブランチ${eventVerbs}トリガーされます`;
                 } else {
-                    branchesText.textContent = `「${triggerAnalysis.triggerBranches.join('」、「')}」ブランチ${eventVerbs}トリガーされます`;
+                    branchesText.textContent = `🌿 「${triggerAnalysis.triggerBranches.join('」、「')}」ブランチ${eventVerbs}トリガーされます`;
                 }
             }
 
@@ -246,7 +217,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
             // パスが「*」のみの場合は全てのファイルが対象
             if (triggerAnalysis.triggerPaths.length === 1 && triggerAnalysis.triggerPaths[0] === '*') {
-                pathsText.textContent = 'すべてのファイルの変更でトリガーされます';
+                pathsText.textContent = '📁 すべてのファイルの変更でトリガーされます';
             } else {
                 // 通常のパスと除外パス（!で始まるもの）を分ける
                 const includePaths = triggerAnalysis.triggerPaths.filter((path: string) => !path.startsWith('!'));
@@ -258,14 +229,14 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
                 let pathDescription = '';
 
                 if (includePaths.length > 0) {
-                    pathDescription += `「${includePaths.join('」、「')}」のパスが差分に含まれている場合にトリガーされます`;
+                    pathDescription += `📁 「${includePaths.join('」、「')}」のパスが差分に含まれている場合にトリガーされます`;
                 }
 
                 if (excludePaths.length > 0) {
                     if (pathDescription) {
                         pathDescription += '。また、';
                     }
-                    pathDescription += `「${excludePaths.join('」、「')}」のパスが差分に含まれていない場合にトリガーされます`;
+                    pathDescription += `🚫 「${excludePaths.join('」、「')}」のパスが差分に含まれていない場合にトリガーされます`;
                 }
 
                 pathsText.textContent = pathDescription;
@@ -284,7 +255,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
             analysisContainer.style.borderLeft = '3px solid #0969da';
 
             const analysisTitle = document.createElement('div');
-            analysisTitle.textContent = 'ワークフロー分析:';
+            analysisTitle.textContent = '🔍 ワークフロー分析:';
             analysisTitle.style.fontWeight = 'bold';
             analysisTitle.style.marginBottom = '4px';
             analysisTitle.style.color = '#24292f';
@@ -304,10 +275,10 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         toggleButton.addEventListener('click', () => {
             if (triggerInfo.style.display === 'none') {
                 triggerInfo.style.display = 'block';
-                toggleButton.textContent = '詳細を隠す';
+                toggleButton.textContent = '🙈 詳細を隠す';
             } else {
                 triggerInfo.style.display = 'none';
-                toggleButton.textContent = '詳細を表示';
+                toggleButton.textContent = '👁️ 詳細を表示';
             }
         });
     });
@@ -326,7 +297,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
 
     // 分析結果がない場合はAPIキー設定を促す
     if (!data.some(item => item.analysis)) {
-        apiKeyNotice.textContent = 'ワークフロー分析を表示するには、拡張機能のアイコンをクリックしてOpenAI APIキーを設定してください。';
+        apiKeyNotice.textContent = '🔑 ワークフロー分析を表示するには、拡張機能のアイコンをクリックしてOpenAI APIキーを設定してください。';
         apiKeyNotice.style.display = 'block';
     }
 
