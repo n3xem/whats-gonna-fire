@@ -164,15 +164,22 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
             container.appendChild(list);
 
             // ページに挿入
-            const targetElement = document.querySelector('.TimelineItem-body');
-            if (targetElement) {
-                // 最初のTimelineItem-bodyの上に挿入
-                targetElement.parentNode?.insertBefore(container, targetElement);
+            const mergeboxElement = document.querySelector('[data-testid="mergebox-partial"]');
+            if (mergeboxElement) {
+                // mergeboxの中の一番下に挿入
+                mergeboxElement.appendChild(container);
             } else {
                 // 代替位置を探す
-                const prTitleElement = document.querySelector('.gh-header-title');
-                if (prTitleElement) {
-                    prTitleElement.parentNode?.insertBefore(container, prTitleElement.nextSibling);
+                const targetElement = document.querySelector('.TimelineItem-body');
+                if (targetElement) {
+                    // 最初のTimelineItem-bodyの上に挿入
+                    targetElement.parentNode?.insertBefore(container, targetElement);
+                } else {
+                    // さらに代替位置を探す
+                    const prTitleElement = document.querySelector('.gh-header-title');
+                    if (prTitleElement) {
+                        prTitleElement.parentNode?.insertBefore(container, prTitleElement.nextSibling);
+                    }
                 }
             }
         },
