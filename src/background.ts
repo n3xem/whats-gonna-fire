@@ -5,7 +5,7 @@ import { getCachedWorkflows, cacheWorkflows } from './cache';
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'getWorkflowsData' && request.url) {
         // ワークフローデータを取得してレスポンスを返す
-        getWorkflowsData(request.url)
+        getMergeTriggeredWorkflowsData(request.url)
             .then(data => {
                 sendResponse({ data });
             })
@@ -19,15 +19,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// ワークフローデータを取得する関数（ストレージ→GitHubの順）
-async function getWorkflowsData(repoUrl: string): Promise<WorkflowWithContent[]> {
+// マージ時に実行されるワークフローデータを取得する関数（ストレージ→GitHubの順）
+async function getMergeTriggeredWorkflowsData(repoUrl: string): Promise<WorkflowWithContent[]> {
     // ストレージからデータを取得
     const cachedData = await getCachedWorkflows(repoUrl);
 
     // キャッシュが有効な場合はそれを返す
     if (cachedData) {
         console.log("キャッシュからワークフローデータを取得しました");
-        return cachedData.data;
+        // マージ時に実行されるワークフローのみをフィルタリング
+        return cachedData.data.filter(item =>
+            item.triggerAnalysis && item.triggerAnalysis.isTriggeredOnDefaultBranch
+        );
     }
 
     // キャッシュがない場合はGitHubから取得
@@ -39,6 +42,9 @@ async function getWorkflowsData(repoUrl: string): Promise<WorkflowWithContent[]>
         await cacheWorkflows(repoUrl, workflowsWithContent);
     }
 
-    // nullの場合は空配列を返す
-    return workflowsWithContent || [];
+    // nullの場合は空配列を返す、そうでない場合はマージ時に実行されるワークフローのみをフィルタリング
+    return workflowsWithContent ?
+        workflowsWithContent.filter(item =>
+            item.triggerAnalysis && item.triggerAnalysis.isTriggeredOnDefaultBranch
+        ) : [];
 }

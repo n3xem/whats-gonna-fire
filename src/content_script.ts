@@ -1,8 +1,8 @@
 import { WorkflowWithContent } from './github_client';
 import { isGitHubRepoOrPRPage } from './common';
 
-// ページロード時に実行
-document.addEventListener('DOMContentLoaded', async () => {
+// ページの読み込みが完全に終わった時に実行
+window.onload = async () => {
     // PRページかどうかをチェック
     const isPRPage = window.location.href.includes('/pull/');
     if (!isPRPage) {
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('ワークフロー表示エラー:', error);
     }
-});
+};
 
 // GitHubのDOM変更を監視（PR詳細ページ内の動的な変更に対応）
 const observer = new MutationObserver((mutations) => {
@@ -37,6 +37,7 @@ const observer = new MutationObserver((mutations) => {
     if (mergeboxElement) {
         // 既存の表示があれば更新しない（重複防止）
         if (!document.querySelector('.workflow-files-container')) {
+            console.log('マージボックスが読み込まれたのでワークフロー情報を取得します');
             chrome.runtime.sendMessage(
                 { action: 'getWorkflowsData', url: window.location.href },
                 (response) => {
@@ -58,14 +59,9 @@ observer.observe(document.body, {
 // ワークフロー情報をDOM上に表示する関数
 function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
     // データチェック
-    if (!data || data.length === 0) {
+    if (!data) {
         return;
     }
-
-    // マージ時に実行されるワークフローのみをフィルタリング
-    const triggeredWorkflows = data.filter(item =>
-        item.triggerAnalysis && item.triggerAnalysis.isTriggeredOnDefaultBranch
-    );
 
     // 既存要素の削除
     const existingContainer = document.querySelector('.workflow-files-container');
@@ -93,7 +89,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
     const description = document.createElement('p');
 
     // 実行されるワークフローがない場合はその旨を表示
-    if (triggeredWorkflows.length === 0) {
+    if (data.length === 0) {
         description.textContent = 'このPRをマージしても実行されるワークフローはありません';
         description.style.fontSize = '14px';
         description.style.color = '#57606a';
@@ -105,7 +101,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         return;
     }
 
-    description.textContent = `このPRをマージすると ${triggeredWorkflows.length} 件のワークフローが実行される可能性があります`;
+    description.textContent = `このPRをマージすると ${data.length} 件のワークフローが実行される可能性があります`;
     description.style.fontSize = '14px';
     description.style.color = '#57606a';
     description.style.margin = '8px 0 16px';
@@ -117,7 +113,7 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
     list.style.listStyle = 'none';
 
     // 各ワークフローのリストアイテムを追加
-    triggeredWorkflows.forEach((item: any) => {
+    data.forEach((item: any) => {
         const workflow = item.workflow;
         const triggerAnalysis = item.triggerAnalysis;
 
@@ -208,18 +204,5 @@ function insertContainerIntoDOM(container: HTMLElement) {
     if (mergeboxElement) {
         // mergeboxの中の一番下に挿入
         mergeboxElement.appendChild(container);
-    } else {
-        // 代替位置を探す
-        const targetElement = document.querySelector('.TimelineItem-body');
-        if (targetElement) {
-            // 最初のTimelineItem-bodyの上に挿入
-            targetElement.parentNode?.insertBefore(container, targetElement);
-        } else {
-            // さらに代替位置を探す
-            const prTitleElement = document.querySelector('.gh-header-title');
-            if (prTitleElement) {
-                prTitleElement.parentNode?.insertBefore(container, prTitleElement.nextSibling);
-            }
-        }
     }
 } 
