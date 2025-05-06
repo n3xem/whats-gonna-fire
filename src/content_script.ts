@@ -1,4 +1,4 @@
-import { WorkflowWithContent } from './github_client';
+import { WorkflowWithContent } from './types';
 import { isGitHubRepoOrPRPage } from './common';
 
 // ページの読み込みが完全に終わった時に実行

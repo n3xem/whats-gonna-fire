@@ -1,5 +1,5 @@
 import * as yaml from 'js-yaml';
-import { WorkflowWithContent, WorkflowTriggerAnalysis } from './github_client';
+import { WorkflowWithContent, WorkflowTriggerAnalysis } from './types';
 
 export class WorkflowAnalyzer {
     /**

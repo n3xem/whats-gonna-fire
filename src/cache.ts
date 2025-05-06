@@ -1,4 +1,4 @@
-import { WorkflowWithContent } from './github_client';
+import { WorkflowWithContent } from './types';
 
 // キャッシュの有効期限（ミリ秒）- 1時間
 export const CACHE_EXPIRATION = 60 * 60 * 1000;

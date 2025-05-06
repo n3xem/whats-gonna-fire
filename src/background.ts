@@ -1,4 +1,5 @@
-import { WorkflowWithContent, GitHubClient } from './github_client';
+import { WorkflowWithContent } from './types';
+import { WorkflowOrchestrator } from './workflow_orchestrator';
 import { getCachedWorkflows, cacheWorkflows } from './cache';
 
 // メッセージリスナーを設定
@@ -35,7 +36,7 @@ async function getMergeTriggeredWorkflowsData(repoUrl: string): Promise<Workflow
 
     // キャッシュがない場合はGitHubから取得
     console.log("GitHubからワークフローデータを取得します");
-    const workflowsWithContent = await GitHubClient.getAllWorkflowsWithContent(repoUrl);
+    const workflowsWithContent = await WorkflowOrchestrator.getAllWorkflowsWithContent(repoUrl);
 
     // 取得したデータをストレージに保存（nullでない場合）
     if (workflowsWithContent) {
