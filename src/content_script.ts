@@ -187,37 +187,51 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         triggerInfo.style.width = '100%';
         triggerInfo.style.display = 'none'; // 初期状態では非表示
 
+        // トリガー条件のヘッダーを追加
+        const triggerHeader = document.createElement('div');
+        triggerHeader.textContent = '⚡ このワークフローは以下の条件がすべて満たされた時にトリガーされます：';
+        triggerHeader.style.fontWeight = 'bold';
+        triggerHeader.style.marginBottom = '8px';
+        triggerInfo.appendChild(triggerHeader);
+
+        // 条件リスト
+        const conditionsList = document.createElement('ul');
+        conditionsList.style.margin = '4px 0';
+        conditionsList.style.paddingLeft = '20px';
+        triggerInfo.appendChild(conditionsList);
+
+        // ブランチ条件
         if (triggerAnalysis.triggerBranches.length > 0) {
-            const branchesText = document.createElement('div');
+            const branchItem = document.createElement('li');
 
             // イベントタイプに応じた動詞を選択
             const eventVerbs = getEventVerbsForBranch(triggerAnalysis.triggerEvents);
 
             // ブランチが「*」のみの場合は全てのブランチが対象
             if (triggerAnalysis.triggerBranches.length === 1 && triggerAnalysis.triggerBranches[0] === '*') {
-                branchesText.textContent = `🌿 すべてのブランチ${eventVerbs}トリガーされます`;
+                branchItem.textContent = `🌿 すべてのブランチ${eventVerbs}`;
             } else {
                 // ワイルドカードを含むブランチ名を特別扱い
                 const hasWildcard = triggerAnalysis.triggerBranches.some((branch: string) =>
                     branch.includes('*') || branch.includes('**'));
 
                 if (hasWildcard) {
-                    branchesText.textContent = `🌿 「${triggerAnalysis.triggerBranches.join('」、「')}」のパターンに一致するブランチ${eventVerbs}トリガーされます`;
+                    branchItem.textContent = `🌿 「${triggerAnalysis.triggerBranches.join('」、「')}」のパターンに一致するブランチ${eventVerbs}`;
                 } else {
-                    branchesText.textContent = `🌿 「${triggerAnalysis.triggerBranches.join('」、「')}」ブランチ${eventVerbs}トリガーされます`;
+                    branchItem.textContent = `🌿 「${triggerAnalysis.triggerBranches.join('」、「')}」ブランチ${eventVerbs}`;
                 }
             }
 
-            triggerInfo.appendChild(branchesText);
+            conditionsList.appendChild(branchItem);
         }
 
-        // パス一覧
+        // パス条件
         if (triggerAnalysis.triggerPaths && triggerAnalysis.triggerPaths.length > 0) {
-            const pathsText = document.createElement('div');
+            const pathItem = document.createElement('li');
 
             // パスが「*」のみの場合は全てのファイルが対象
             if (triggerAnalysis.triggerPaths.length === 1 && triggerAnalysis.triggerPaths[0] === '*') {
-                pathsText.textContent = '📁 すべてのファイルの変更でトリガーされます';
+                pathItem.textContent = '📁 すべてのファイルの変更';
             } else {
                 // 通常のパスと除外パス（!で始まるもの）を分ける
                 const includePaths = triggerAnalysis.triggerPaths.filter((path: string) => !path.startsWith('!'));
@@ -229,20 +243,20 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
                 let pathDescription = '';
 
                 if (includePaths.length > 0) {
-                    pathDescription += `📁 「${includePaths.join('」、「')}」のパスが差分に含まれている場合にトリガーされます`;
+                    pathDescription += `📁 「${includePaths.join('」、「')}」のパスが差分に含まれている`;
                 }
 
                 if (excludePaths.length > 0) {
                     if (pathDescription) {
-                        pathDescription += '。また、';
+                        pathDescription += ' かつ ';
                     }
-                    pathDescription += `🚫 「${excludePaths.join('」、「')}」のパスが差分に含まれていない場合にトリガーされます`;
+                    pathDescription += `🚫 「${excludePaths.join('」、「')}」のパスが差分に含まれていない`;
                 }
 
-                pathsText.textContent = pathDescription;
+                pathItem.textContent = pathDescription;
             }
 
-            triggerInfo.appendChild(pathsText);
+            conditionsList.appendChild(pathItem);
         }
 
         // OpenAIによる分析結果を表示（存在する場合）
