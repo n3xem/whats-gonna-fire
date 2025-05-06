@@ -63,6 +63,28 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         return;
     }
 
+    /**
+     * イベントタイプに応じた動詞を生成
+     * @param events イベントタイプの配列
+     * @returns イベントに応じた動詞句
+     */
+    function getEventVerbsForBranch(events: string[]): string {
+        // マージ時に実行されるのはpushとpull_requestのみを考慮
+        const hasPush = events.includes('push');
+        const hasPR = events.includes('pull_request') || events.includes('pull_request_target');
+
+        if (hasPush && hasPR) {
+            return 'へのプッシュまたはプルリクエストで';
+        } else if (hasPush) {
+            return 'へのプッシュで';
+        } else if (hasPR) {
+            return 'へのプルリクエストで';
+        } else {
+            // その他のケース（通常はここには来ない）
+            return 'に関連する操作で';
+        }
+    }
+
     // 既存要素の削除
     const existingContainer = document.querySelector('.workflow-files-container');
     if (existingContainer) {
@@ -175,24 +197,61 @@ function displayWorkflowsOnDOM(data: WorkflowWithContent[]) {
         triggerInfo.style.marginBottom = '12px';
         triggerInfo.style.marginLeft = '16px';
 
-        // イベント一覧
-        if (triggerAnalysis.triggerEvents.length > 0) {
-            const eventsText = document.createElement('div');
-            eventsText.textContent = `イベント: ${triggerAnalysis.triggerEvents.join(', ')}`;
-            triggerInfo.appendChild(eventsText);
-        }
-
-        // ブランチ一覧
         if (triggerAnalysis.triggerBranches.length > 0) {
             const branchesText = document.createElement('div');
-            branchesText.textContent = `ブランチ: ${triggerAnalysis.triggerBranches.join(', ')}`;
+
+            // イベントタイプに応じた動詞を選択
+            const eventVerbs = getEventVerbsForBranch(triggerAnalysis.triggerEvents);
+
+            // ブランチが「*」のみの場合は全てのブランチが対象
+            if (triggerAnalysis.triggerBranches.length === 1 && triggerAnalysis.triggerBranches[0] === '*') {
+                branchesText.textContent = `すべてのブランチ${eventVerbs}トリガーされます`;
+            } else {
+                // ワイルドカードを含むブランチ名を特別扱い
+                const hasWildcard = triggerAnalysis.triggerBranches.some((branch: string) =>
+                    branch.includes('*') || branch.includes('**'));
+
+                if (hasWildcard) {
+                    branchesText.textContent = `「${triggerAnalysis.triggerBranches.join('」、「')}」のパターンに一致するブランチ${eventVerbs}トリガーされます`;
+                } else {
+                    branchesText.textContent = `「${triggerAnalysis.triggerBranches.join('」、「')}」ブランチ${eventVerbs}トリガーされます`;
+                }
+            }
+
             triggerInfo.appendChild(branchesText);
         }
 
         // パス一覧
         if (triggerAnalysis.triggerPaths && triggerAnalysis.triggerPaths.length > 0) {
             const pathsText = document.createElement('div');
-            pathsText.textContent = `パス: ${triggerAnalysis.triggerPaths.join(', ')}`;
+
+            // パスが「*」のみの場合は全てのファイルが対象
+            if (triggerAnalysis.triggerPaths.length === 1 && triggerAnalysis.triggerPaths[0] === '*') {
+                pathsText.textContent = 'すべてのファイルの変更でトリガーされます';
+            } else {
+                // 通常のパスと除外パス（!で始まるもの）を分ける
+                const includePaths = triggerAnalysis.triggerPaths.filter((path: string) => !path.startsWith('!'));
+                const excludePaths = triggerAnalysis.triggerPaths
+                    .filter((path: string) => path.startsWith('!'))
+                    .map((path: string) => path.substring(1)); // 先頭の!を除去
+
+                // 表示用のテキスト作成
+                let pathDescription = '';
+
+                if (includePaths.length > 0) {
+                    pathDescription += `「${includePaths.join('」、「')}」のパスが差分に含まれている場合にトリガーされます`;
+                }
+
+                if (excludePaths.length > 0) {
+                    if (pathDescription) {
+                        pathDescription += '。また、';
+                    }
+                    pathDescription += `「${excludePaths.join('」、「')}」のパスが差分に含まれていない場合にトリガーされます`;
+                }
+
+                pathsText.textContent = pathDescription;
+            }
+
             triggerInfo.appendChild(pathsText);
         }
 
