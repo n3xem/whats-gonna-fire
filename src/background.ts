@@ -70,7 +70,7 @@ function executeScriptForDOMDisplay(tabId: number, data: WorkflowWithContent[] |
 
             // 説明追加
             const description = document.createElement('p');
-            description.textContent = `このPRをマージすると ${triggeredWorkflows.length} 件のワークフローが実行されます`;
+            description.textContent = `このPRをマージすると ${triggeredWorkflows.length} 件のワークフローが実行される可能性があります`;
             description.style.fontSize = '14px';
             description.style.color = '#57606a';
             description.style.margin = '8px 0 16px';
