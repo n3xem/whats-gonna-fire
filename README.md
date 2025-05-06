@@ -1,5 +1,7 @@
 # What's Gonna Fire
 
+![What's Gonna Fire](whats-gonna-fire.png)
+
 GitHubのPRマージ時に実行されるワークフローを可視化するChrome拡張機能です。
 
 ## 機能
