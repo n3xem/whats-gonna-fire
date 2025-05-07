@@ -1,10 +1,10 @@
 // 各サービスを調整するオーケストレーターファサード
-import { parseRepoUrl } from './common';
+import { parsePRUrl } from './common';
 import { GitHubApiService } from './github_api_service';
 import { WorkflowFilter } from './workflow_filter';
 import { WorkflowRepository } from './workflow_repository';
 import { WorkflowAnalyzer } from './workflow_analyzer';
-import { WorkflowWithContent } from './types';
+import { WorkflowWithContent, PullRequestFile } from './types';
 import { OpenAIService } from './open_ai_service';
 
 /**
@@ -14,13 +14,13 @@ export class WorkflowOrchestrator {
     /**
      * リポジトリ内のすべてのワークフローとその内容を取得
      */
-    static async getAllWorkflowsWithContent(url: string): Promise<WorkflowWithContent[] | null> {
-        const repoInfo = parseRepoUrl(url);
+    static async getAllWorkflowsWithContent(prUrl: string): Promise<WorkflowWithContent[] | null> {
+        const repoInfo = parsePRUrl(prUrl);
         if (!repoInfo) {
             return null;
         }
 
-        const { owner, repo } = repoInfo;
+        const { owner, repo, prNumber } = repoInfo;
         console.log(`リポジトリ: ${owner}/${repo}`);
 
         try {
@@ -60,8 +60,15 @@ export class WorkflowOrchestrator {
                 };
             });
 
+            // PRの差分ファイルを取得
+            const prFiles = await GitHubApiService.getPullRequestFiles(owner, repo, prNumber);
+
+
+            // PRの差分ファイルに基づいてトリガーされるワークフローを抽出
+            const diffFilteredWorkflows = this.filterWorkflowsByPullRequestFiles(analyzedWorkflows, prFiles);
+
             // OpenAIによるワークフロー内容の分析
-            return await this.analyzeWorkflowsWithOpenAI(analyzedWorkflows);
+            return await this.analyzeWorkflowsWithOpenAI(diffFilteredWorkflows);
         } catch (error) {
             console.error("ワークフロー取得エラー:", error);
             return null;
@@ -97,4 +104,56 @@ export class WorkflowOrchestrator {
 
         return analyzedWorkflows;
     }
-} 
+
+    /**
+     * PRの差分ファイルに基づいてトリガーされるワークフローを抽出する
+     */
+    static filterWorkflowsByPullRequestFiles(
+        workflows: WorkflowWithContent[],
+        prFiles: PullRequestFile[]
+    ): WorkflowWithContent[] {
+        // PRファイルのパス一覧を取得
+        const changedFilePaths = prFiles.map(file => file.filename);
+        console.log("変更されたファイル:", changedFilePaths);
+
+        // デフォルトブランチへのマージ時にトリガーされるワークフローのうち、
+        // ファイルパスの条件に一致するものを抽出
+        return workflows.filter(workflow => {
+            // トリガー解析結果がない場合はスキップ
+            if (!workflow.triggerAnalysis) {
+                return false;
+            }
+
+            // デフォルトブランチへのマージでトリガーされるか確認
+            const isTriggeredOnMerge = workflow.triggerAnalysis.isTriggeredOnDefaultBranch;
+
+            // トリガーパスが設定されていない場合は、すべてのファイル変更でトリガーされる
+            const triggerPaths = workflow.triggerAnalysis.triggerPaths;
+            if (triggerPaths.length === 0) {
+                return isTriggeredOnMerge;
+            }
+
+            // 変更されたファイルのいずれかがトリガーパスに一致するか確認
+            const isPathMatched = changedFilePaths.some(filePath => {
+                // トリガーパスのいずれかに一致するか確認
+                return triggerPaths.some(pattern => {
+                    // パターンマッチングの実装
+                    // ワイルドカードを含むパターンの場合は正規表現に変換して比較
+                    if (pattern.includes('*')) {
+                        const regexPattern = pattern
+                            .replace(/\./g, '\\.')
+                            .replace(/\*/g, '.*');
+                        const regex = new RegExp(`^${regexPattern}$`);
+                        return regex.test(filePath);
+                    }
+
+                    // 単純なパス比較
+                    return filePath === pattern || filePath.startsWith(`${pattern}/`);
+                });
+            });
+
+            // デフォルトブランチへのマージでトリガーされ、かつパスが一致する場合
+            return isTriggeredOnMerge && isPathMatched;
+        });
+    }
+}

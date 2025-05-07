@@ -1,5 +1,5 @@
 // GitHub APIとの通信を担当するサービス
-import { RepoInfo, WorkflowsResponse } from './types';
+import { RepoInfo, WorkflowsResponse, PullRequestFile } from './types';
 
 export class GitHubApiService {
     /**
@@ -36,5 +36,16 @@ export class GitHubApiService {
         }
 
         return await response.text();
+    }
+
+    /**
+     * PRの差分ファイル一覧を取得
+     */
+    static async getPullRequestFiles(owner: string, repo: string, pullNumber: number): Promise<PullRequestFile[]> {
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files`);
+        if (!response.ok) {
+            throw new Error(`GitHub API エラー: ${response.status}`);
+        }
+        return await response.json() as PullRequestFile[];
     }
 } 

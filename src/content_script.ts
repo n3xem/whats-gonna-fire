@@ -1,16 +1,10 @@
 import { WorkflowWithContent } from './types';
-import { isGitHubRepoOrPRPage } from './common';
+import { isGitHubPRPage } from './common';
 
 // ページの読み込みが完全に終わった時に実行
 window.onload = async () => {
-    // PRページかどうかをチェック
-    const isPRPage = window.location.href.includes('/pull/');
-    if (!isPRPage) {
-        return; // PRページでない場合は処理しない
-    }
-
-    // 現在のURLがGitHubリポジトリページかPRページかチェック
-    if (!isGitHubRepoOrPRPage(window.location.href)) {
+    // 現在のURLがGitHubPRページかチェック
+    if (!isGitHubPRPage(window.location.href)) {
         return;
     }
 

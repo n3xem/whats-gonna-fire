@@ -1,12 +1,12 @@
 // 共通関数
 
 /**
- * GitHubのリポジトリページまたはPRページかどうかを判定する
+ * GitHubのPRページかどうかを判定する
  * @param url 判定対象のURL
- * @returns GitHubのリポジトリページまたはPRページの場合はtrue
+ * @returns GitHubのPRページの場合はtrue
  */
-export function isGitHubRepoOrPRPage(url: string): boolean {
-    return !!url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)(?:\/pull\/(\d+))?/);
+export function isGitHubPRPage(url: string): boolean {
+    return !!url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/);
 }
 
 /**
@@ -24,5 +24,24 @@ export function parseRepoUrl(url: string): { owner: string; repo: string } | nul
     return {
         owner: urlMatch[1],
         repo: urlMatch[2]
+    };
+}
+
+/**
+ * PRのURLからowner、repo、PR番号を抽出
+ * @param url GitHub PRのURL
+ * @returns owner、repo、PR番号を含むオブジェクト、解析失敗時はnull
+ */
+export function parsePRUrl(url: string): { owner: string; repo: string; prNumber: number } | null {
+    const urlMatch = url.match(/https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/);
+    if (!urlMatch) {
+        console.log("GitHub PRのURLの解析に失敗しました。");
+        return null;
+    }
+
+    return {
+        owner: urlMatch[1],
+        repo: urlMatch[2],
+        prNumber: parseInt(urlMatch[3], 10)
     };
 } 

@@ -21,9 +21,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // マージ時に実行されるワークフローデータを取得する関数（ストレージ→GitHubの順）
-async function getMergeTriggeredWorkflowsData(repoUrl: string): Promise<WorkflowWithContent[]> {
+async function getMergeTriggeredWorkflowsData(prUrl: string): Promise<WorkflowWithContent[]> {
     // ストレージからデータを取得
-    const cachedData = await getCachedWorkflows(repoUrl);
+    const cachedData = await getCachedWorkflows(prUrl);
 
     // キャッシュが有効な場合はそれを返す
     if (cachedData) {
@@ -36,11 +36,11 @@ async function getMergeTriggeredWorkflowsData(repoUrl: string): Promise<Workflow
 
     // キャッシュがない場合はGitHubから取得
     console.log("GitHubからワークフローデータを取得します");
-    const workflowsWithContent = await WorkflowOrchestrator.getAllWorkflowsWithContent(repoUrl);
+    const workflowsWithContent = await WorkflowOrchestrator.getAllWorkflowsWithContent(prUrl);
 
     // 取得したデータをストレージに保存（nullでない場合）
     if (workflowsWithContent) {
-        await cacheWorkflows(repoUrl, workflowsWithContent);
+        await cacheWorkflows(prUrl, workflowsWithContent);
     }
 
     // nullの場合は空配列を返す、そうでない場合はマージ時に実行されるワークフローのみをフィルタリング
