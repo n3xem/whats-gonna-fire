@@ -1,6 +1,7 @@
 import { WorkflowWithContent } from './types';
 import { WorkflowOrchestrator } from './workflow_orchestrator';
 import { getCachedWorkflows, cacheWorkflows } from './cache';
+import { convertPRUrlToRepoUrl } from './common';
 
 // メッセージリスナーを設定
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -23,7 +24,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // マージ時に実行されるワークフローデータを取得する関数（ストレージ→GitHubの順）
 async function getMergeTriggeredWorkflowsData(prUrl: string): Promise<WorkflowWithContent[]> {
     // ストレージからデータを取得
-    const cachedData = await getCachedWorkflows(prUrl);
+    const repoUrl = convertPRUrlToRepoUrl(prUrl);
+    if (!repoUrl) {
+        throw new Error("リポジトリURLの解析に失敗しました");
+    }
+    const cachedData = await getCachedWorkflows(repoUrl);
 
     // キャッシュが有効な場合はそれを返す
     if (cachedData) {
@@ -38,9 +43,10 @@ async function getMergeTriggeredWorkflowsData(prUrl: string): Promise<WorkflowWi
     console.log("GitHubからワークフローデータを取得します");
     const workflowsWithContent = await WorkflowOrchestrator.getAllWorkflowsWithContent(prUrl);
 
+
     // 取得したデータをストレージに保存（nullでない場合）
     if (workflowsWithContent) {
-        await cacheWorkflows(prUrl, workflowsWithContent);
+        await cacheWorkflows(repoUrl, workflowsWithContent);
     }
 
     // nullの場合は空配列を返す、そうでない場合はマージ時に実行されるワークフローのみをフィルタリング

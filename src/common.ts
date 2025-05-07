@@ -44,4 +44,19 @@ export function parsePRUrl(url: string): { owner: string; repo: string; prNumber
         repo: urlMatch[2],
         prNumber: parseInt(urlMatch[3], 10)
     };
-} 
+}
+
+/**
+ * PRのURLからリポジトリのURLに変換
+ * @param prUrl GitHub PRのURL
+ * @returns リポジトリのURL、解析失敗時はnull
+ */
+export function convertPRUrlToRepoUrl(prUrl: string): string | null {
+    const prInfo = parsePRUrl(prUrl);
+    if (!prInfo) {
+        return null;
+    }
+
+    return `https://github.com/${prInfo.owner}/${prInfo.repo}`;
+}
+
